@@ -18,8 +18,8 @@
 
 当前已生成最终演示视频：
 
-- `outputs/demo_videoA_370s_25s.mp4`
-- `outputs/demo_videoB_980s_25s.mp4`
+- `outputs/demo_videoA`
+- `outputs/demo_videoB`
 
 演示视频为左右拼接格式：
 
