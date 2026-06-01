@@ -529,10 +529,10 @@ class VideoADetector:
 class VideoBDetector:
     """Check the reference cap sites in videoB with geometry-locked side-cap sites."""
 
-    version = 19
+    version = 21
 
     def __init__(self) -> None:
-        self.model_signature = "videoB_far_lower_red_locked_v19"
+        self.model_signature = "videoB_removed_side_ng_v21"
         self.right_x0 = 900
         self.min_center_x = 1025
         self.side_upper_offset = -95
@@ -549,6 +549,8 @@ class VideoBDetector:
         self.side_gray_ng_min = 1850.0
         self.side_edge_ng_min = 18.0
         self.side_present_min = 0.52
+        self.side_removed_edge_min = 88.0
+        self.side_removed_value_std_min = 43.0
         self.memories = {
             "top": NormalMemory(MemoryConfig(max_memory=2000, threshold_quantile=0.99, threshold_scale=1.35)),
             "bottom": NormalMemory(MemoryConfig(max_memory=2000, threshold_quantile=0.99, threshold_scale=1.35)),
@@ -661,16 +663,40 @@ class VideoBDetector:
                     )
                     continue
                 presence = float(meta.get("side_presence", 0.0))
-                status = "OK" if presence >= self.side_present_min else "NG"
-                side_state = "capped" if status == "OK" else "open"
-                score = presence if status == "OK" else max(0.0, self.side_present_min - presence)
+                removed_texture = (
+                    site["kind"] == "side_lower"
+                    and float(meta.get("edge_mean", 0.0)) >= self.side_removed_edge_min
+                    and float(meta.get("value_std", 0.0)) >= self.side_removed_value_std_min
+                )
+                if removed_texture:
+                    status = "NG"
+                    side_state = "removed"
+                    score = float(meta.get("edge_mean", 0.0)) / 100.0
+                    reason = "side_cap_removed_by_texture"
+                elif presence >= self.side_present_min:
+                    status = "OK"
+                    side_state = "capped"
+                    score = presence
+                    reason = "side_cap_capped"
+                else:
+                    status = "NG"
+                    side_state = "open"
+                    score = max(0.0, self.side_present_min - presence)
+                    reason = "side_cap_open"
                 detections.append(
                     Detection(
                         box=site["box_xywh"],
                         status=status,
                         score=float(score),
                         label=f"{site['kind']} {side_state}",
-                        details=site | meta | {"group": group, "side_state": side_state, "reason": f"side_cap_{side_state}"},
+                        details=site
+                        | meta
+                        | {
+                            "group": group,
+                            "side_state": side_state,
+                            "removed_texture": bool(removed_texture),
+                            "reason": reason,
+                        },
                     )
                 )
                 continue
@@ -730,7 +756,7 @@ class VideoBDetector:
             if det.status == "SKIP":
                 label = "SKIP"
             elif det.details.get("group") == "side":
-                label = "CAPPED" if det.status == "OK" else "OPEN"
+                label = "CAPPED" if det.status == "OK" else ("REMOVED" if det.details.get("removed_texture") else "OPEN")
             else:
                 label = f"{det.status} {det.score:.1f}"
             cv2.putText(out, label, (x, max(18, y - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.52, draw_color, 2, cv2.LINE_AA)

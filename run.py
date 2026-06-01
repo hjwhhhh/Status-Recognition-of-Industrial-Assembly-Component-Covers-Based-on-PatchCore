@@ -74,13 +74,15 @@ def ensure_model(video_key: str):
             "side_present_min",
             "side_gray_ng_min",
             "side_edge_ng_min",
+            "side_removed_edge_min",
+            "side_removed_value_std_min",
         )
         for attr in required_attrs:
             if getattr(detector, attr, None) is None:
                 missing_required = True
                 break
         if (
-            getattr(detector, "model_signature", None) != "videoB_far_lower_red_locked_v19"
+            getattr(detector, "model_signature", None) != "videoB_removed_side_ng_v21"
             or
             getattr(detector, "side_upper_offset", None) != -95
             or getattr(detector, "side_lower_offset", None) != -76
@@ -90,6 +92,8 @@ def ensure_model(video_key: str):
             or getattr(detector, "side_lower_far_offset", None) != -116
             or getattr(detector, "side_lower_far_y", None) != 888
             or getattr(detector, "side_lower_far_half", None) != (44, 44)
+            or getattr(detector, "side_removed_edge_min", None) != 88.0
+            or getattr(detector, "side_removed_value_std_min", None) != 43.0
         ):
             missing_required = True
     if (expected_version is not None and getattr(detector, "version", None) != expected_version) or missing_required:
@@ -141,6 +145,7 @@ def summarize_metrics(video_key: str, detector, detections) -> dict[str, float]:
         summary["side_presence"] = float(np.mean([d.details.get("side_presence", 0.0) for d in side])) if side else 0.0
         summary["side_capped"] = float(len(capped_side))
         summary["side_open"] = float(len(open_side))
+        summary["side_removed"] = float(len(open_side))
         summary["side_target"] = float(len(side))
         summary["top_blue_min"] = float(getattr(detector, "blue_min", {}).get("top", 0.0))
         summary["bottom_blue_min"] = float(getattr(detector, "blue_min", {}).get("bottom", 0.0))
@@ -212,11 +217,11 @@ def draw_parameter_panel(
         lines = [
             f"status={'NG' if metrics['status'] > 0 else 'OK'}  sites={metrics['valid']:.0f}  NG={metrics['ng']:.0f}",
             f"main_blue={metrics['main_blue']:.0f}  top_min={metrics['top_blue_min']:.0f}  bottom_min={metrics['bottom_blue_min']:.0f}",
-            f"side_presence={metrics['side_presence']:.2f}  threshold={metrics['side_present_min']:.2f}  capped/open={metrics['side_capped']:.0f}/{metrics['side_open']:.0f}",
+            f"side_presence={metrics['side_presence']:.2f}  threshold={metrics['side_present_min']:.2f}  capped/removed={metrics['side_capped']:.0f}/{metrics['side_removed']:.0f}",
         ]
         plot_specs = [
             ("side_presence", 1.0, GREEN, metrics["side_present_min"]),
-            ("side_open", 6.0, RED, None),
+            ("side_removed", 6.0, RED, None),
             ("main_blue", 6500.0, CYAN, None),
         ]
 

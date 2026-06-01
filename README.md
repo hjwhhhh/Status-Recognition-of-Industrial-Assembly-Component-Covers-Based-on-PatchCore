@@ -18,8 +18,8 @@
 
 当前已生成最终演示视频：
 
-- `outputs/demo_videoA.mp4`
-- `outputs/demo_videoB.mp4`
+- `outputs/demo_videoA_370s_25s.mp4`
+- `outputs/demo_videoB_980s_25s.mp4`
 
 演示视频为左右拼接格式：
 
@@ -215,6 +215,7 @@ python run.py infer --video B --start 980 --duration 40 --stride-sec 1
 - 当前阈值：`side_present_min=0.5322`
 - `side_presence >= threshold` 判为 `CAPPED/OK`
 - `side_presence < threshold` 判为 `OPEN/NG`
+- 对下侧侧盖额外加入已卸盖负样本规则：当 `edge_mean >= 88.0` 且 `value_std >= 43.0` 时，优先判为 `REMOVED/NG`。该规则只对非常强的裸露接头、螺纹和强纹理区域触发，避免把正常未卸盖接头误判为已卸盖。
 
 训练信息：
 
@@ -224,8 +225,8 @@ python run.py infer --video B --start 980 --duration 40 --stride-sec 1
   - top：`432`
   - bottom：`432`
   - side：`866`
-- 检测器版本：`VideoBDetector version 19`
-- 模型签名：`videoB_far_lower_red_locked_v19`
+- 检测器版本：`VideoBDetector version 21`
+- 模型签名：`videoB_removed_side_ng_v21`
 
 ## 10. 参数面板说明
 
@@ -251,7 +252,7 @@ python run.py infer --video B --start 980 --duration 40 --stride-sec 1
 - `top_min` / `bottom_min`：上下主盖蓝色面积阈值。
 - `side_presence`：侧盖存在度均值。
 - `threshold`：侧盖存在度阈值。
-- `capped/open`：侧盖存在/打开数量。
+- `capped/removed`：未卸盖/已卸盖侧盖数量。
 
 参数曲线用于说明检测依据，方便实验报告分析状态变化。
 
@@ -274,6 +275,13 @@ outputs/report_figures/
 | `fig03_videoB_side_three_9832_side_by_side.png` | videoB 983.2s 三工件场景检测结果 |
 | `fig03_videoB_side_three_9832_annotated.png` | videoB 983.2s 多盖位检测结果 |
 | `fig03_videoB_side_three_9832_parameter_panel.png` | videoB 参数面板裁剪图 |
+| `fig03a_videoB_removed_9816_side_by_side.png` | videoB 981.6s 已卸盖负样本识别结果 |
+| `fig03a_videoB_removed_9816_annotated.png` | videoB 981.6s 已卸盖侧盖 REMOVED/NG 局部结果 |
+| `fig03a_videoB_removed_9816_parameter_panel.png` | videoB 981.6s 负样本参数面板裁剪图 |
+| `fig03b_videoB_correct_9896_side_by_side.png` | videoB 989.6s 正确未卸盖样本恢复为 CAPPED/OK |
+| `fig03b_videoB_correct_9896_annotated.png` | videoB 989.6s 正确样本检测结果局部 |
+| `fig04a_videoB_correct_9970_side_by_side.png` | videoB 997.0s 正确未卸盖样本恢复为 CAPPED/OK |
+| `fig04a_videoB_correct_9970_annotated.png` | videoB 997.0s 正确样本检测结果局部 |
 | `fig04_videoB_side_two_9976_side_by_side.png` | videoB 997.6s 两工件场景检测结果 |
 | `fig04_videoB_side_two_9976_annotated.png` | videoB 997.6s 检测结果局部 |
 | `fig05_videoB_end_10033_side_by_side.png` | videoB 1003.3s 末尾帧检测结果 |
